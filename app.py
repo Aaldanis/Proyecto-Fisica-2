@@ -170,7 +170,7 @@ with st.sidebar:
         else:
             try:
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("models/gemini-3.8-flash")
+                model = genai.GenerativeModel("models/gemini-3.5-flash-lite")
                 prompt = f"""Eres un asistente de Estadística Aplicada. 
 Solo puedes responder preguntas relacionadas con:
 - Estadística descriptiva (media, mediana, moda, rango, dispersión)
