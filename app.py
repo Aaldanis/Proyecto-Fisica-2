@@ -158,7 +158,7 @@ with st.sidebar:
         except:
             api_key = ""
     if api_key:
-        st.success("API KEY encontrada")
+        st.success("Conexión con IA exitosa")
     else:
         st.warning("API Key no configurada (.env o Streamlit Secrets)")
     pregunta_ia = st.text_area("Pregunta sobre Estadística", placeholder="Ej: ¿Cuándo se usa la desviación estándar muestral?", height=80, key="pregunta_ia")
@@ -170,7 +170,7 @@ with st.sidebar:
         else:
             try:
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("models/gemini-3.5-flash-lite")
+                model = genai.GenerativeModel("models/gemini-3.8-flash")
                 prompt = f"""Eres un asistente de Estadística Aplicada. 
 Solo puedes responder preguntas relacionadas con:
 - Estadística descriptiva (media, mediana, moda, rango, dispersión)
@@ -203,8 +203,9 @@ if seccion == "Módulos principales":
 
     # ----- Módulo 1: Estadística Descriptiva -----
     with tab1:
-        st.html('<div class="glass-card">')
+        #st.html('<div class="glass-card">')
         st.subheader("Estadística Descriptiva")
+        st.caption("Calcula media, mediana, moda, rango y medidas de dispersión (s y σ) con procedimiento completo.")
         unidad = st.text_input("Unidad (opcional)", placeholder="A, m, kg...")
         datos = st.text_area("Datos", placeholder="2.1, 2.3, 2.2, 2.4, 2.0", height=100)
         if st.button("Calcular descriptiva", key="btn1"):
@@ -224,8 +225,9 @@ if seccion == "Módulos principales":
 
     # ----- Módulo 2: Datos Experimentales -----
     with tab2:
-        st.html('<div class="glass-card">')
+        #st.html('<div class="glass-card">')
         st.subheader("Datos Experimentales")
+        st.caption("Procesa series de mediciones, maneja unidades y muestra el resultado como x̄ ± s.")
         st.info("Convierte primero las mediciones a la misma unidad.")
         col1, col2 = st.columns([3, 1])
         with col1:
@@ -257,8 +259,9 @@ if seccion == "Módulos principales":
 
     # ----- Módulo 3: Tablas y Gráficas -----
     with tab3:
-        st.html('<div class="glass-card">')
+        #st.html('<div class="glass-card">')
         st.subheader("Tablas de Frecuencia y Gráficas")
+        st.caption("Genera tablas de frecuencia por intervalos (Regla de Sturges) e histogramas o diagramas de dispersión.")
         datos = st.text_area("Datos", height=90, placeholder="3.1, 3.6, 3.8, 3.9, 4.2, ...")
         tipo = st.radio("Gráfica", ["Histograma", "Diagrama de dispersión"], horizontal=True)
         datos_y = st.text_area("Datos Y", height=70) if tipo == "Diagrama de dispersión" else ""
@@ -268,24 +271,37 @@ if seccion == "Módulos principales":
                 st.error(err)
             else:
                 n = len(arr)
-                # Regla de Sturges para número de clases
+                if n > 5000:
+                    st.warning("Hay muchos datos. La gráfica puede tardar un poco.")
+                # Regla de Sturges para número de clases (sin límite máximo)
                 num_clases = int(np.ceil(1 + 3.322 * np.log10(n)))
-                num_clases = max(3, min(num_clases, 12))
+                num_clases = max(3, num_clases)
                 st.info(f"Número de clases (Regla de Sturges): **{num_clases}**")
 
-                minimo, maximo = arr.min(), arr.max()
-                bins = np.linspace(minimo, maximo + 0.0001, num_clases + 1)
-                frecuencias, bordes = np.histogram(arr, bins=bins)
+                minimo, maximo = float(arr.min()), float(arr.max())
+                # Evitar problemas de precisión con los bordes
+                rango = maximo - minimo
+                if rango == 0:
+                    rango = 1.0
+                amplitud = rango / num_clases
+                bordes = [minimo + i * amplitud for i in range(num_clases + 1)]
+                bordes[-1] = maximo + amplitud * 0.001  # asegurar que el máximo entre
+
+                frecuencias, _ = np.histogram(arr, bins=bordes)
 
                 filas = []
                 frec_acum = 0
                 for i in range(num_clases):
-                    lim_inf, lim_sup = bordes[i], bordes[i + 1]
+                    lim_inf = bordes[i]
+                    lim_sup = bordes[i + 1]
                     marca = (lim_inf + lim_sup) / 2
                     f_abs = int(frecuencias[i])
                     frec_acum += f_abs
-                    f_rel = f_abs / n
-                    intervalo = f"[{lim_inf:.2f} – {lim_sup:.2f})" if i < num_clases - 1 else f"[{lim_inf:.2f} – {lim_sup:.2f}]"
+                    f_rel = f_abs / n if n > 0 else 0
+                    if i < num_clases - 1:
+                        intervalo = f"[{lim_inf:.2f} – {lim_sup:.2f})"
+                    else:
+                        intervalo = f"[{lim_inf:.2f} – {lim_sup:.2f}]"
                     filas.append({
                         "Clase (Intervalo)": intervalo,
                         "Marca de clase (xᵢ)": round(marca, 3),
@@ -304,15 +320,25 @@ if seccion == "Módulos principales":
 
                 fig, ax = plt.subplots()
                 if tipo == "Histograma":
-                    ax.hist(arr, bins=bins, color="#38bdf8", edgecolor="white")
-                    ax.set_title("Histograma")
+                    try:
+                        ax.hist(arr, bins=bordes, color="#38bdf8", edgecolor="white")
+                        ax.set_title("Histograma")
+                        ax.set_xlabel("Valores")
+                        ax.set_ylabel("Frecuencia")
+                    except Exception as e:
+                        st.error(f"No se pudo generar el histograma: {e}")
                 else:
                     y, e = parsear_datos(datos_y)
                     if e or len(y) != len(arr):
-                        st.error("Serie Y inválida")
+                        st.error("Serie Y inválida o no tiene la misma cantidad de datos que X.")
                     else:
-                        ax.scatter(arr, y, color="#c084fc")
-                        ax.set_title("Diagrama de dispersión")
+                        try:
+                            ax.scatter(arr, y, color="#c084fc")
+                            ax.set_title("Diagrama de dispersión")
+                            ax.set_xlabel("X")
+                            ax.set_ylabel("Y")
+                        except Exception as ex:
+                            st.error(f"Error al graficar: {ex}")
                 ax.grid(alpha=0.3)
                 st.pyplot(fig)
                 plt.close()
@@ -320,8 +346,9 @@ if seccion == "Módulos principales":
 
     # ----- Módulo 4: Probabilidad -----
     with tab4:
-        st.html('<div class="glass-card">')
+        #st.html('<div class="glass-card">')
         st.subheader("Distribución Normal")
+        st.caption("Calcula probabilidades de la distribución normal usando parámetros teóricos o datos en bruto.")
         modo = st.radio("¿Cómo quieres ingresar los parámetros?",
                         ["Ingresar parámetros teóricos (μ y σ)", "Ingresar datos en bruto (lista)"],
                         horizontal=True)
@@ -362,75 +389,131 @@ if seccion == "Módulos principales":
                 if "P(X ≤ x)" in tipo:
                     z = (x - mu) / sigma
                     st.latex(rf"Z = \frac{{{x} - {mu:.4f}}}{{{sigma:.4f}}} = {z:.4f}")
-                    st.success(f"P(X ≤ {x}) = {dist.cdf(x):.6f}")
+                    st.success(f"P(X ≤ {x}) = {dist.cdf(x)*100:.4f}%")
                 elif "P(X ≥ x)" in tipo:
-                    st.success(f"P(X ≥ {x}) = {1 - dist.cdf(x):.6f}")
+                    z = (x - mu) / sigma
+                    # Mostrar la fórmula general, la sustitución y el complemento
+                    st.latex(rf"Z = \frac{{{x} - {mu:.4f}}}{{{sigma:.4f}}} = {z:.4f}")
+                    st.success(f"P(X ≥ {x}) = {(1 - dist.cdf(x))*100:.2f}%")
                 else:
-                    st.success(f"P({a} ≤ X ≤ {b}) = {dist.cdf(b) - dist.cdf(a):.6f}")
+                    za = (a - mu) / sigma
+                    zb = (b - mu) / sigma
+                    # Mostrar la estandarización de ambos puntos (a y b)
+                    st.latex(r"Z_1 = \frac{a - \mu}{\sigma}, \quad Z_2 = \frac{b - \mu}{\sigma}")
+                    st.latex(rf"Z_1 = \frac{{{a} - {mu:.4f}}}{{{sigma:.4f}}} = {za:.4f}, \quad Z_2 = \frac{{{b} - {mu:.4f}}}{{{sigma:.4f}}} = {zb:.4f}")
+                    
+                    prob = dist.cdf(b) - dist.cdf(a)
+                    st.success(f"P({a} ≤ X ≤ {b}) = {prob * 100:.2f}%")
         st.html('</div>')
 
     # ----- Módulo 5: Correlación -----
+    # ----- Módulo 5: Correlación -----
     with tab5:
-        st.html('<div class="glass-card">')
         st.subheader("Correlación y Regresión Lineal")
+        st.caption("Calcula el coeficiente de correlación (r) y la recta de regresión lineal con procedimiento paso a paso.")
+    
         c1, c2 = st.columns(2)
-        dx = c1.text_area("X", placeholder="1,2,3,4,5")
-        dy = c2.text_area("Y", placeholder="2,4,5,4,6")
+        dx = c1.text_area("X", placeholder="1,2,3,4,5", key="tx_x")
+        dy = c2.text_area("Y", placeholder="2,4,5,4,6", key="tx_y")
+    
         if st.button("Calcular", key="btn5"):
             x, ex = parsear_datos(dx)
             y, ey = parsear_datos(dy)
+        
             if ex or ey:
                 st.error(ex or ey)
+            elif len(x) < 2 or len(y) < 2:
+                st.error("Debes ingresar al menos 2 pares de datos.")
             elif len(x) != len(y):
-                st.error("Deben tener la misma cantidad")
+                st.error("Las variables X e Y deben tener la misma cantidad de elementos.")
             else:
+                # 1. Cálculos de bases
                 media_x = np.mean(x)
                 media_y = np.mean(y)
                 dx_arr = x - media_x
                 dy_arr = y - media_y
+                
                 suma_dxdy = np.sum(dx_arr * dy_arr)
                 suma_dx2 = np.sum(dx_arr ** 2)
                 suma_dy2 = np.sum(dy_arr ** 2)
+                
                 r, _ = stats.pearsonr(x, y)
-                pendiente, intercepto, *_ = stats.linregress(x, y)
+                
+                # Cálculo de pendiente (b) e intercepto (a)
+                b = suma_dxdy / suma_dx2 if suma_dx2 != 0 else 0
+                a = media_y - (b * media_x)
+                r2 = r ** 2
 
+                # --- Paso 1: Medias ---
                 st.markdown("### Paso 1: Medias")
-                st.markdown(f"$$\\bar{{x}} = {media_x:.4f}$$")
-                st.markdown(f"$$\\bar{{y}} = {media_y:.4f}$$")
+                st.latex(rf"\bar{{x}} = {media_x:.4f}, \quad \bar{{y}} = {media_y:.4f}")
 
+                # --- Paso 2: Coeficiente de Correlación ---
                 st.markdown("### Paso 2: Coeficiente de correlación (r)")
                 st.latex(r"r = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum (x_i - \bar{x})^2 \cdot \sum (y_i - \bar{y})^2}}")
-                st.markdown(f"$$\\sum (x_i - \\bar{{x}})(y_i - \\bar{{y}}) = {suma_dxdy:.4f}$$")
-                st.markdown(f"$$\\sum (x_i - \\bar{{x}})^2 = {suma_dx2:.4f}$$")
-                st.markdown(f"$$\\sum (y_i - \\bar{{y}})^2 = {suma_dy2:.4f}$$")
-                st.markdown(f"$$r = \\frac{{{suma_dxdy:.4f}}}{{\\sqrt{{{suma_dx2:.4f} \\times {suma_dy2:.4f}}}}} = {r:.4f}$$")
+                
+                st.latex(rf"\sum (x_i - \bar{{x}})(y_i - \bar{{y}}) = {suma_dxdy:.4f}")
+                st.latex(rf"\sum (x_i - \bar{{x}})^2 = {suma_dx2:.4f}, \quad \sum (y_i - \bar{{y}})^2 = {suma_dy2:.4f}")
+                st.latex(rf"r = \frac{{{suma_dxdy:.4f}}}{{\sqrt{{{suma_dx2:.4f} \times {suma_dy2:.4f}}}}} = {r:.4f}")
 
+                # --- Paso 3: Recta de Regresión ---
                 st.markdown("### Paso 3: Recta de regresión")
                 st.latex(r"\hat{y} = a + bx")
-                st.markdown(f"$$b = {pendiente:.4f}$$")
-                st.markdown(f"$$a = {intercepto:.4f}$$")
-                st.markdown(f"$$\\hat{{y}} = {intercepto:.4f} + {pendiente:.4f}x$$")
+                
+                # Paso a paso de b (Pendiente)
+                st.latex(r"b = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2}")
+                st.latex(rf"b = \frac{{{suma_dxdy:.4f}}}{{{suma_dx2:.4f}}} = {b:.4f}")
+                
+                # Paso a paso de a (Intercepto)
+                st.latex(r"a = \bar{y} - b\bar{x}")
+                st.latex(rf"a = {media_y:.4f} - ({b:.4f} \cdot {media_x:.4f}) = {a:.4f}")
+                
+                # Ecuación formateada con manejo de signo (+ / -)
+                signo = "+" if b >= 0 else "-"
+                st.latex(rf"\hat{{y}} = {a:.4f} {signo} {abs(b):.4f}x")
 
+                # --- Interpretación y Métricas ---
+                st.markdown("---")
                 fuerza = "fuerte" if abs(r) > 0.7 else "moderada" if abs(r) > 0.4 else "débil"
                 direccion = "positiva" if r > 0 else "negativa"
-                st.info(f"Interpretación: correlación {fuerza} y {direccion}.")
-                st.metric("r", f"{r:.4f}")
-                st.metric("r²", f"{r**2:.4f}")
+                
+                st.info(f"**Interpretación:** Existe una correlación **{fuerza} y {direccion}** entre las variables.")
+                
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Coef. Correlación (r)", f"{r:.4f}")
+                m2.metric("Coef. Determinación (r²)", f"{r2:.4f}")
+                m3.metric("Variabilidad explicada", f"{r2 * 100:.2f}%")
 
-                fig, ax = plt.subplots()
-                ax.scatter(x, y, color="#38bdf8")
-                ax.plot(x, intercepto + pendiente * x, color="#c084fc", label="Recta de regresión")
-                ax.legend()
-                ax.grid(alpha=0.3)
+                # --- Gráfica con Estilo Oscuro Adaptado ---
+                fig, ax = plt.subplots(figsize=(7, 4))
+                fig.patch.set_facecolor('#0e1117')  # Fondo oscuro de la figura
+                ax.set_facecolor('#161b22')         # Fondo oscuro de los ejes
+                
+                # Puntos y recta
+                ax.scatter(x, y, color="#38bdf8", s=60, label="Datos observados", zorder=3)
+                x_line = np.linspace(min(x), max(x), 100)
+                y_line = a + b * x_line
+                ax.plot(x_line, y_line, color="#c084fc", linewidth=2, label=rf"$\hat{{y}} = {a:.2f} {signo} {abs(b):.2f}x$")
+                
+                # Estilos de ejes y cuadrícula
+                ax.tick_params(colors='white')
+                ax.xaxis.label.set_color('white')
+                ax.yaxis.label.set_color('white')
+                for spine in ax.spines.values():
+                    spine.set_color('#30363d')
+                    
+                ax.set_xlabel("X")
+                ax.set_ylabel("Y")
+                ax.legend(facecolor='#21262d', edgecolor='none', labelcolor='white')
+                ax.grid(color='#30363d', linestyle='--', alpha=0.5)
+                
                 st.pyplot(fig)
                 plt.close()
-        st.html('</div>')
-
 # -----------------------------------------------------------------------------
 # EJERCICIOS DE EJEMPLO
 # -----------------------------------------------------------------------------
 elif seccion == "Ejercicios de ejemplo":
-    st.html('<div class="glass-card">')
+    #st.html('<div class="glass-card">')
     st.subheader("Ejercicios de ejemplo")
     ejemplos = {
         "Corriente (ejemplo del proyecto)": "2.1, 2.3, 2.2, 2.4, 2.0",
@@ -458,7 +541,7 @@ elif seccion == "Ejercicios de ejemplo":
 # PRÁCTICA
 # -----------------------------------------------------------------------------
 elif seccion == "Practicar":
-    st.html('<div class="glass-card">')
+    #st.html('<div class="glass-card">')
     st.subheader("Práctica con retroalimentación")
     if "prac" not in st.session_state:
         st.session_state.prac = None
