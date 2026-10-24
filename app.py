@@ -52,7 +52,7 @@ VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celest
 # Abrimos el archivo styles.css y leemos todo su contenido
 with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
-
+"""
 # -----------------------------------------------------------------------------
 # VÍDEO DE FONDO (método robusto con JavaScript)
 # -----------------------------------------------------------------------------
@@ -98,7 +98,9 @@ if VIDEO_FONDO:
     </script>
     """, unsafe_allow_html=True)
 else:
-    st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(CSS, unsafe_allow_html=True)"""
+# Vídeo desactivado temporalmente
+st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # FUNCIONES (importadas desde backend.py)
