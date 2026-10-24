@@ -42,7 +42,7 @@ UNIVERSIDAD = "Universidad Mariano Gálvez de Guatemala"                      # 
 ADICIONAL = "Mas opciones y asistente IA en la barra lateral izquierda"      # Mensaje adicional que se muestra arriba
 
 # URL del vídeo de fondo (déjalo vacío "" si no quieres vídeo de fondo)
-VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celestial-veil.1920x1080.mp4"
+VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celestial-veil.1920x1080.h264"
 
 # -----------------------------------------------------------------------------
 # ESTILOS CSS (diseño visual de la página)
