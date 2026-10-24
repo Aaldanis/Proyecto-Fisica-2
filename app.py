@@ -2,128 +2,109 @@
 # ASISTENTE VIRTUAL DE ESTADÍSTICA APLICADA
 # Universidad Mariano Gálvez de Guatemala
 # =============================================================================
-# Este archivo es la interfaz principal de la aplicación hecha con Streamlit.
-# Controla menús, pestañas, entradas de datos, botones y la forma de mostrar resultados.
 
-# -----------------------------------------------------------------------------
-# IMPORTACIONES
-# -----------------------------------------------------------------------------
-import streamlit as st                  # Librería principal para crear la interfaz web
-import numpy as np                      # Cálculos matemáticos (media, desviación, arrays)
-import pandas as pd                     # Manejo de tablas de datos (frecuencias)
-import matplotlib.pyplot as plt         # Creación de gráficas (histogramas, dispersión)
-from scipy import stats                 # Estadística avanzada (moda, normal, correlación)
-import re                               # Expresiones regulares para detectar letras o caracteres inválidos
-import os                               # Acceso a variables de entorno del sistema
-from dotenv import load_dotenv          # Carga variables desde un archivo .env
-from collections import Counter         # Contador de frecuencias (útil para calcular la moda)
-import google.generativeai as genai     # Librería para usar el modelo de IA Gemini de Google
+# Importaciones
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import stats
+import re
+import os
+from dotenv import load_dotenv
+from collections import Counter
+import google.generativeai as genai
 
-# Carga las variables de entorno del archivo .env (si existe)
+# Carga variables de entorno
 load_dotenv()
 
-# -----------------------------------------------------------------------------
-# CONFIGURACIÓN DE LA PÁGINA
-# -----------------------------------------------------------------------------
-# Configura el título de la pestaña del navegador, el ícono y el diseño ancho
+# Configuración de la página
 st.set_page_config(
-    page_title="Asistente de Estadística UMG",   # Título que aparece en la pestaña
-    page_icon="📊",                              # Ícono de la pestaña
-    layout="wide"                                # La página ocupa todo el ancho disponible
+    page_title="Asistente de Estadística UMG",
+    page_icon="📊",
+    layout="wide"
 )
 
-# -----------------------------------------------------------------------------
-# DATOS QUE DEBES EDITAR
-# -----------------------------------------------------------------------------
-INTEGRANTES = "Edgar Aldanis Chávez Estrada y Erick Adolfo de Leon Rivera"   # Nombres de los integrantes
-SECCION = "Ing. M.A Reyes Baltazar Mazá Guerra"                              # Nombre del profesor
-ASIGNATURA = "Fisica 2"                                                      # Nombre de la asignatura
-UNIVERSIDAD = "Universidad Mariano Gálvez de Guatemala"                      # Nombre de la universidad
-ADICIONAL = "Mas opciones y asistente IA en la barra lateral izquierda"      # Mensaje adicional superior
+# Datos del proyecto
+INTEGRANTES = "Edgar Aldanis Chávez Estrada y Erick Adolfo de Leon Rivera"
+SECCION = "Ing. M.A Reyes Baltazar Mazá Guerra"
+ASIGNATURA = "Fisica 2"
+UNIVERSIDAD = "Universidad Mariano Gálvez de Guatemala"
+ADICIONAL = "Mas opciones y asistente IA en la barra lateral izquierda"
 
-# URL del vídeo de fondo (déjalo vacío "" si no quieres vídeo)
+# URL del vídeo de fondo
 VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celestial-veil.1920x1080.mp4"
 
-# -----------------------------------------------------------------------------
-# ESTILOS CSS (diseño visual)
-# -----------------------------------------------------------------------------
-# Abre el archivo styles.css y lee todo su contenido
+# Carga y aplica estilos CSS
 with open("styles.css", "r", encoding="utf-8") as f:
-    CSS = f"<style>{f.read()}</style>"   # Encierra el CSS dentro de una etiqueta <style>
-
-# Aplica los estilos CSS a la página
+    CSS = f"<style>{f.read()}</style>"
 st.html(CSS)
 
-# Vídeo de fondo (solo se muestra si se definió una URL)
+# Vídeo de fondo
 if VIDEO_FONDO:
-    # Inserta un elemento HTML de vídeo que se reproduce automáticamente, en bucle y sin sonido
     st.html(f'<video autoplay muted loop playsinline id="video-fondo"><source src="{VIDEO_FONDO}" type="video/mp4"></video>')
 
-# -----------------------------------------------------------------------------
-# FUNCIONES
-# -----------------------------------------------------------------------------
-# Importa las funciones de cálculo desde el archivo backend.py
+# Importa funciones de cálculo
 from backend import parsear_datos, calcular
 
-
+# Función que muestra el procedimiento completo
 def mostrar_procedimiento(res, unidad=""):
     """Muestra el procedimiento completo con fórmulas y valores sustituidos."""
-    # Si hay unidad, le agrega un espacio al inicio para que se vea bien
     u = f" {unidad}" if unidad else ""
-    datos = res["datos"]      # Extrae los datos originales
-    n = res["n"]              # Cantidad de datos
-    media = res["media"]      # Media aritmética ya calculada
+    datos = res["datos"]
+    n = res["n"]
+    media = res["media"]
 
     st.markdown("#### Procedimiento completo")
     st.write(f"**Datos:** {', '.join(map(str, datos))}{u}")
     st.write(f"**n =** {n}")
 
-    # ==================== 1. MEDIA ARITMÉTICA ====================
-    suma = np.sum(datos)                     # Suma de todos los datos
+    # Media aritmética
+    suma = np.sum(datos)
     st.markdown("**1. Media aritmética**")
-    st.latex(r"\bar{x} = \frac{\sum_{i=1}^{n} x_i}{n}")   # Fórmula general
-    suma_str = " + ".join([str(x) for x in datos])        # Cadena con la suma escrita
+    st.latex(r"\bar{x} = \frac{\sum_{i=1}^{n} x_i}{n}")
+    suma_str = " + ".join([str(x) for x in datos])
     st.latex(rf"\bar{{x}} = \frac{{{suma_str}}}{{{n}}} = \frac{{{suma:.4f}}}{{{n}}} = {media:.4f}")
 
-    # ==================== 2. MEDIANA ====================
+    # Mediana
     st.markdown("**2. Mediana**")
     st.latex(r"\text{Mediana} = \begin{cases} x_{\frac{n+1}{2}} & \text{si } n \text{ es impar} \\ \frac{x_{n/2} + x_{n/2+1}}{2} & \text{si } n \text{ es par} \end{cases}")
-    ordenados = np.sort(datos)               # Ordena los datos de menor a mayor
+    ordenados = np.sort(datos)
     st.write(f"Datos ordenados: {', '.join(map(str, ordenados))}")
-    if n % 2 == 1:                           # Si n es impar
+    if n % 2 == 1:
         pos = (n + 1) // 2
         st.markdown(f"n = {n} (impar)")
         st.markdown(f"$$\\text{{Posición}} = \\frac{{n+1}}{{2}} = \\frac{{{n}+1}}{{2}} = {pos}$$")
         st.markdown(f"Mediana = dato en posición {pos} = **{res['mediana']:.4f}{u}**")
-    else:                                    # Si n es par
+    else:
         pos1 = n // 2
         pos2 = pos1 + 1
         st.markdown(f"n = {n} (par)")
         st.markdown(f"$$\\text{{Mediana}} = \\frac{{x_{{{pos1}}} + x_{{{pos2}}}}}{{2}} = \\frac{{{ordenados[pos1-1]:.4f} + {ordenados[pos2-1]:.4f}}}{{2}} = {res['mediana']:.4f}$$")
 
-    # ==================== 3. MODA ====================
+    # Moda
     st.markdown("**3. Moda**")
     st.latex(r"\text{Moda} = \text{valor con mayor frecuencia}")
-    if isinstance(res["moda"], str):         # Si no hay moda única
+    if isinstance(res["moda"], str):
         st.write(f"Moda: **{res['moda']}**")
     else:
-        frec = Counter(datos)[res["moda"]]   # Cuenta cuántas veces aparece la moda
+        frec = Counter(datos)[res["moda"]]
         st.markdown(f"El valor {res['moda']} aparece {frec} veces.")
         st.markdown(f"$$\\text{{Moda}} = {res['moda']}$$")
 
-    # ==================== 4. MEDIDAS DE DISPERSIÓN ====================
+    # Medidas de dispersión
     st.markdown("**4. Medidas de dispersión**")
     st.markdown("- **Rango**")
     st.latex(r"R = x_{\max} - x_{\min}")
     st.latex(rf"R = {np.max(datos):.4f} - {np.min(datos):.4f} = {res['rango']:.4f}")
 
-    desviaciones = datos - media             # Desviación de cada dato respecto a la media
-    cuadrados = desviaciones ** 2            # Eleva al cuadrado cada desviación
-    suma_cuadrados = np.sum(cuadrados)       # Suma de los cuadrados
+    desviaciones = datos - media
+    cuadrados = desviaciones ** 2
+    suma_cuadrados = np.sum(cuadrados)
 
     st.markdown("- **Desviación estándar muestral (s)**")
     st.latex(r"s = \sqrt{\frac{\sum (x_i - \bar{x})^2}{n-1}}")
-    if n <= 10:                              # Si hay pocos datos, muestra el detalle
+    if n <= 10:
         terminos = " + ".join([f"({x:.2f}-{media:.2f})^2" for x in datos])
         st.latex(rf"\sum (x_i-\bar{{x}})^2 = {terminos} = {suma_cuadrados:.4f}")
     st.latex(rf"s = \sqrt{{\frac{{{suma_cuadrados:.4f}}}{{{n-1}}}}} = {res['std_m']:.4f}")
@@ -139,10 +120,7 @@ def mostrar_procedimiento(res, unidad=""):
     st.success(f"**Resultado final:** Media = {media:.4f}{u} | s = {res['std_m']:.4f}{u}")
     st.info(f"La desviación estándar muestral (s) usa n-1. La poblacional (σ) usa n.")
 
-
-# -----------------------------------------------------------------------------
-# ENCABEZADO DE LA PÁGINA
-# -----------------------------------------------------------------------------
+# Encabezado de la página
 st.html(f"""
 <div class="glass-card">
     <div style="color:#67e8f9; font-weight:600;">{UNIVERSIDAD}</div>
@@ -152,16 +130,12 @@ st.html(f"""
 </div>
 """)
 
-# -----------------------------------------------------------------------------
-# MENÚ LATERAL
-# -----------------------------------------------------------------------------
+# Barra lateral
 with st.sidebar:
     st.markdown("### Opciones")
-    # Radio buttons para elegir la sección principal
     seccion = st.radio("", ["Módulos principales", "Ejercicios de ejemplo", "Practicar"], label_visibility="collapsed")
     st.markdown("---")
     st.markdown("### Asistente IA")
-    # Intenta obtener la API Key de Gemini
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
         try:
@@ -172,7 +146,6 @@ with st.sidebar:
         st.success("Conexión con IA exitosa")
     else:
         st.warning("API Key no configurada (.env o Streamlit Secrets)")
-    # Caja de texto para preguntas a la IA
     pregunta_ia = st.text_area("Pregunta sobre Estadística", placeholder="Ej: ¿Cuándo se usa la desviación estándar muestral?", height=80, key="pregunta_ia")
     if st.button("Preguntar al asistente"):
         if not api_key:
@@ -204,28 +177,25 @@ Pregunta del usuario: {pregunta_ia}"""
     st.markdown("---")
     st.caption(f"{INTEGRANTES}\n{SECCION}")
 
-# -----------------------------------------------------------------------------
-# MÓDULOS PRINCIPALES
-# -----------------------------------------------------------------------------
+# Módulos principales
 if seccion == "Módulos principales":
-    # Crea las 5 pestañas
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "1. Descriptiva", "2. Datos Experimentales", "3. Tablas y Gráficas",
         "4. Probabilidad", "5. Correlación"
     ])
 
-    # ----- Módulo 1: Estadística Descriptiva -----
+    # Módulo 1: Estadística Descriptiva
     with tab1:
         st.subheader("Estadística Descriptiva")
         st.caption("Calcula media, mediana, moda, rango y medidas de dispersión (s y σ) con procedimiento completo.")
         unidad = st.text_input("Unidad (opcional)", placeholder="A, m, kg...")
         datos = st.text_area("Datos", placeholder="2.1, 2.3, 2.2, 2.4, 2.0", height=100)
         if st.button("Calcular descriptiva", key="btn1"):
-            arr, err = parsear_datos(datos)     # Convierte el texto a números y valida
+            arr, err = parsear_datos(datos)
             if err:
                 st.error(err)
             else:
-                r = calcular(arr)               # Calcula todas las medidas
+                r = calcular(arr)
                 mostrar_procedimiento(r, unidad)
                 u = f" {unidad}" if unidad else ""
                 c1, c2, c3, c4 = st.columns(4)
@@ -235,7 +205,7 @@ if seccion == "Módulos principales":
                 c4.metric("Rango", f"{r['rango']:.4f}{u}")
         st.html('</div>')
 
-    # ----- Módulo 2: Datos Experimentales -----
+    # Módulo 2: Datos Experimentales
     with tab2:
         st.subheader("Datos Experimentales")
         st.caption("Procesa series de mediciones, maneja unidades y muestra el resultado como x̄ ± s.")
@@ -268,7 +238,7 @@ if seccion == "Módulos principales":
                 mostrar_procedimiento(r, u)
         st.html('</div>')
 
-    # ----- Módulo 3: Tablas y Gráficas -----
+    # Módulo 3: Tablas y Gráficas
     with tab3:
         st.subheader("Tablas de Frecuencia y Gráficas")
         st.caption("Genera tablas de frecuencia por intervalos (Regla de Sturges) e histogramas o diagramas de dispersión.")
@@ -283,11 +253,9 @@ if seccion == "Módulos principales":
                 n = len(arr)
                 if n > 5000:
                     st.warning("Hay muchos datos. La gráfica puede tardar un poco.")
-                # Regla de Sturges para calcular el número de clases
                 num_clases = int(np.ceil(1 + 3.322 * np.log10(n)))
                 num_clases = max(3, num_clases)
                 st.info(f"Número de clases (Regla de Sturges): **{num_clases}**")
-
                 minimo, maximo = float(arr.min()), float(arr.max())
                 rango = maximo - minimo
                 if rango == 0:
@@ -295,9 +263,7 @@ if seccion == "Módulos principales":
                 amplitud = rango / num_clases
                 bordes = [minimo + i * amplitud for i in range(num_clases + 1)]
                 bordes[-1] = maximo + amplitud * 0.001
-
                 frecuencias, _ = np.histogram(arr, bins=bordes)
-
                 filas = []
                 frec_acum = 0
                 for i in range(num_clases):
@@ -326,7 +292,6 @@ if seccion == "Módulos principales":
                     "Frecuencia acumulada (Fᵢ)": ""
                 })
                 st.dataframe(pd.DataFrame(filas), use_container_width=True, hide_index=True)
-
                 fig, ax = plt.subplots()
                 if tipo == "Histograma":
                     try:
@@ -353,7 +318,7 @@ if seccion == "Módulos principales":
                 plt.close()
         st.html('</div>')
 
-    # ----- Módulo 4: Probabilidad -----
+    # Módulo 4: Probabilidad
     with tab4:
         st.subheader("Distribución Normal")
         st.caption("Calcula probabilidades de la distribución normal usando parámetros teóricos o datos en bruto.")
@@ -376,7 +341,6 @@ if seccion == "Módulos principales":
                     mu = float(np.mean(arr))
                     sigma = float(np.std(arr, ddof=1))
                     st.success(f"Parámetros calculados: μ = {mu:.4f} | σ (s) = {sigma:.4f}")
-
         tipo = st.selectbox("Calcular", [
             "P(X ≤ x) — Probabilidad acumulada a la izquierda",
             "P(X ≥ x) — Probabilidad acumulada a la derecha",
@@ -387,7 +351,6 @@ if seccion == "Módulos principales":
             b = st.number_input("b", value=1.0)
         else:
             x = st.number_input("x", value=0.0)
-
         if st.button("Calcular probabilidad", key="btn4"):
             if sigma <= 0:
                 st.error("La desviación estándar debe ser mayor que 0.")
@@ -400,4 +363,144 @@ if seccion == "Módulos principales":
                     st.success(f"P(X ≤ {x}) = {dist.cdf(x)*100:.4f}%")
                 elif "P(X ≥ x)" in tipo:
                     z = (x - mu) / sigma
-                    st.latex(rf"Z = \frac{{{x} - {mu:.4f}}}
+                    st.latex(rf"Z = \frac{{{x} - {mu:.4f}}}{{{sigma:.4f}}} = {z:.4f}")
+                    st.success(f"P(X ≥ {x}) = {(1 - dist.cdf(x))*100:.2f}%")
+                else:
+                    za = (a - mu) / sigma
+                    zb = (b - mu) / sigma
+                    st.latex(r"Z_1 = \frac{a - \mu}{\sigma}, \quad Z_2 = \frac{b - \mu}{\sigma}")
+                    st.latex(rf"Z_1 = \frac{{{a} - {mu:.4f}}}{{{sigma:.4f}}} = {za:.4f}, \quad Z_2 = \frac{{{b} - {mu:.4f}}}{{{sigma:.4f}}} = {zb:.4f}")
+                    prob = dist.cdf(b) - dist.cdf(a)
+                    st.success(f"P({a} ≤ X ≤ {b}) = {prob * 100:.2f}%")
+        st.html('</div>')
+
+    # Módulo 5: Correlación
+    with tab5:
+        st.subheader("Correlación y Regresión Lineal")
+        st.caption("Calcula el coeficiente de correlación (r) y la recta de regresión lineal con procedimiento paso a paso.")
+        c1, c2 = st.columns(2)
+        dx = c1.text_area("X", placeholder="1,2,3,4,5", key="tx_x")
+        dy = c2.text_area("Y", placeholder="2,4,5,4,6", key="tx_y")
+        if st.button("Calcular", key="btn5"):
+            x, ex = parsear_datos(dx)
+            y, ey = parsear_datos(dy)
+            if ex or ey:
+                st.error(ex or ey)
+            elif len(x) < 2 or len(y) < 2:
+                st.error("Debes ingresar al menos 2 pares de datos.")
+            elif len(x) != len(y):
+                st.error("Las variables X e Y deben tener la misma cantidad de elementos.")
+            else:
+                media_x = np.mean(x)
+                media_y = np.mean(y)
+                dx_arr = x - media_x
+                dy_arr = y - media_y
+                suma_dxdy = np.sum(dx_arr * dy_arr)
+                suma_dx2 = np.sum(dx_arr ** 2)
+                suma_dy2 = np.sum(dy_arr ** 2)
+                r, _ = stats.pearsonr(x, y)
+                b = suma_dxdy / suma_dx2 if suma_dx2 != 0 else 0
+                a = media_y - (b * media_x)
+                r2 = r ** 2
+                st.markdown("### Paso 1: Medias")
+                st.latex(rf"\bar{{x}} = {media_x:.4f}, \quad \bar{{y}} = {media_y:.4f}")
+                st.markdown("### Paso 2: Coeficiente de correlación (r)")
+                st.latex(r"r = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum (x_i - \bar{x})^2 \cdot \sum (y_i - \bar{y})^2}}")
+                st.latex(rf"\sum (x_i - \bar{{x}})(y_i - \bar{{y}}) = {suma_dxdy:.4f}")
+                st.latex(rf"\sum (x_i - \bar{{x}})^2 = {suma_dx2:.4f}, \quad \sum (y_i - \bar{{y}})^2 = {suma_dy2:.4f}")
+                st.latex(rf"r = \frac{{{suma_dxdy:.4f}}}{{\sqrt{{{suma_dx2:.4f} \times {suma_dy2:.4f}}}}} = {r:.4f}")
+                st.markdown("### Paso 3: Recta de regresión")
+                st.latex(r"\hat{y} = a + bx")
+                st.latex(r"b = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sum (x_i - \bar{x})^2}")
+                st.latex(rf"b = \frac{{{suma_dxdy:.4f}}}{{{suma_dx2:.4f}}} = {b:.4f}")
+                st.latex(r"a = \bar{y} - b\bar{x}")
+                st.latex(rf"a = {media_y:.4f} - ({b:.4f} \cdot {media_x:.4f}) = {a:.4f}")
+                signo = "+" if b >= 0 else "-"
+                st.latex(rf"\hat{{y}} = {a:.4f} {signo} {abs(b):.4f}x")
+                st.markdown("---")
+                fuerza = "fuerte" if abs(r) > 0.7 else "moderada" if abs(r) > 0.4 else "débil"
+                direccion = "positiva" if r > 0 else "negativa"
+                st.info(f"**Interpretación:** Existe una correlación **{fuerza} y {direccion}** entre las variables.")
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Coef. Correlación (r)", f"{r:.4f}")
+                m2.metric("Coef. Determinación (r²)", f"{r2:.4f}")
+                m3.metric("Variabilidad explicada", f"{r2 * 100:.2f}%")
+                fig, ax = plt.subplots(figsize=(7, 4))
+                fig.patch.set_facecolor('#0e1117')
+                ax.set_facecolor('#161b22')
+                ax.scatter(x, y, color="#38bdf8", s=60, label="Datos observados", zorder=3)
+                x_line = np.linspace(min(x), max(x), 100)
+                y_line = a + b * x_line
+                ax.plot(x_line, y_line, color="#c084fc", linewidth=2, label=rf"$\hat{{y}} = {a:.2f} {signo} {abs(b):.2f}x$")
+                ax.tick_params(colors='white')
+                ax.xaxis.label.set_color('white')
+                ax.yaxis.label.set_color('white')
+                for spine in ax.spines.values():
+                    spine.set_color('#30363d')
+                ax.set_xlabel("X")
+                ax.set_ylabel("Y")
+                ax.legend(facecolor='#21262d', edgecolor='none', labelcolor='white')
+                ax.grid(color='#30363d', linestyle='--', alpha=0.5)
+                st.pyplot(fig)
+                plt.close()
+
+# Ejercicios de ejemplo
+elif seccion == "Ejercicios de ejemplo":
+    st.subheader("Ejercicios de ejemplo")
+    ejemplos = {
+        "Corriente (ejemplo del proyecto)": "2.1, 2.3, 2.2, 2.4, 2.0",
+        "Notas": "85, 90, 78, 92, 88, 76, 95, 82",
+        "Alturas (cm)": "165, 170, 168, 172, 160, 175, 169",
+        "Tiempos (s)": "0.25, 0.28, 0.22, 0.30, 0.26, 0.24",
+        "Temperaturas": "22.5, 23.1, 21.8, 22.9, 23.4, 22.0",
+        "Pesos (g)": "50.2, 49.8, 50.5, 49.9, 50.1, 50.3",
+        "Velocidades": "45, 52, 48, 55, 50, 47, 53",
+        "Puntajes": "70, 85, 60, 90, 75, 80, 65, 88",
+        "pH": "7.1, 7.0, 7.2, 6.9, 7.1, 7.3",
+        "Energía (kWh)": "120, 135, 110, 145, 125, 130, 140",
+        "Presiones": "1.01, 1.02, 0.99, 1.03, 1.00, 1.01",
+        "Distancias (m)": "10.5, 11.2, 10.8, 11.0, 10.9, 11.1"
+    }
+    ej = st.selectbox("Elige", list(ejemplos.keys()))
+    st.code(ejemplos[ej])
+    if st.button("Resolver ejemplo"):
+        arr, err = parsear_datos(ejemplos[ej])
+        if not err:
+            mostrar_procedimiento(calcular(arr))
+    st.html('</div>')
+
+# Práctica
+elif seccion == "Practicar":
+    st.subheader("Práctica con retroalimentación")
+    if "prac" not in st.session_state:
+        st.session_state.prac = None
+    if st.button("Generar ejercicio nuevo"):
+        n = np.random.randint(6, 11)
+        base = np.random.uniform(15, 90)
+        st.session_state.prac = np.round(np.random.normal(base, base * 0.12, n), 2)
+        st.rerun()
+    if st.session_state.prac is not None:
+        datos = st.session_state.prac
+        st.code(", ".join(map(str, datos)))
+        c1, c2 = st.columns(2)
+        mu_u = c1.number_input("Tu media", format="%.4f", step=0.01)
+        s_u = c2.number_input("Tu desviación estándar muestral", format="%.4f", step=0.01)
+        if st.button("Verificar"):
+            mu_ok, s_ok = np.mean(datos), np.std(datos, ddof=1)
+            if abs(mu_u - mu_ok) < 0.05 and abs(s_u - s_ok) < 0.05:
+                st.success("¡Correcto!")
+            else:
+                st.warning("Revisa:")
+                if abs(mu_u - mu_ok) >= 0.05:
+                    st.error(f"Media correcta: {mu_ok:.4f}")
+                if abs(s_u - s_ok) >= 0.05:
+                    st.error(f"s correcta: {s_ok:.4f}")
+            st.markdown("**Procedimiento correcto**")
+            mostrar_procedimiento(calcular(datos))
+    else:
+        st.info("Genera un ejercicio para empezar.")
+    st.html('</div>')
+
+# Pie de página
+st.markdown("---")
+st.caption(f"{INTEGRANTES} · {ASIGNATURA} · {SECCION}")
