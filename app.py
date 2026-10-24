@@ -51,13 +51,33 @@ VIDEO_FONDO = "hhttps://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celes
 with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
 
-# Aplicamos los estilos CSS a la página de Streamlit
-st.html(CSS)
-
-# Vídeo de fondo (solo se muestra si se puso una URL válida)
+# CSS + Vídeo de fondo juntos (método que funciona en Streamlit)
 if VIDEO_FONDO:
-    # Insertamos un elemento HTML de vídeo que se reproduce automáticamente, en bucle y sin sonido
-    st.html(f'<video autoplay muted loop playsinline id="video-fondo"><source src="{VIDEO_FONDO}" type="video/mp4"></video>')
+    video_html = f"""
+    <style>
+    #video-fondo {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+        opacity: 0.45;
+        pointer-events: none;
+    }}
+    .stApp, [data-testid="stAppViewContainer"], .main {{
+        background: transparent !important;
+    }}
+    </style>
+    <video autoplay muted loop playsinline id="video-fondo">
+        <source src="{VIDEO_FONDO}" type="video/mp4">
+    </video>
+    """
+    st.markdown(video_html, unsafe_allow_html=True)
+else:
+    # Si no hay vídeo, solo aplicamos el CSS normal
+    st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # FUNCIONES (importadas desde backend.py)
