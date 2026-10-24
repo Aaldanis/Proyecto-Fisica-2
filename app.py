@@ -18,6 +18,7 @@ import os                               # Acceso a variables de entorno del sist
 from dotenv import load_dotenv          # Carga variables desde un archivo .env
 from collections import Counter         # Contador de frecuencias (útil para la moda)
 import google.generativeai as genai     # Librería para usar el modelo de IA de Google (Gemini)
+import streamlit.components.v1 as components
 
 # Cargamos las variables de entorno del archivo .env (si existe)
 load_dotenv()
@@ -51,32 +52,34 @@ VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celest
 with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
 
-# CSS + Vídeo de fondo juntos (método que funciona en Streamlit)
+# -----------------------------------------------------------------------------
+# VÍDEO DE FONDO (versión más estable)
+# -----------------------------------------------------------------------------
 if VIDEO_FONDO:
     video_html = f"""
     <style>
-    #video-fondo {{
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
-        z-index: -1;
-        opacity: 0.45;
-        pointer-events: none;
-    }}
-    .stApp, [data-testid="stAppViewContainer"], .main {{
-        background: transparent !important;
-    }}
+        #video-fondo {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.45;
+            pointer-events: none;
+        }}
+        .stApp, [data-testid="stAppViewContainer"], .main {{
+            background: transparent !important;
+        }}
     </style>
     <video autoplay muted loop playsinline id="video-fondo">
         <source src="{VIDEO_FONDO}" type="video/mp4">
     </video>
     """
-    st.markdown(video_html, unsafe_allow_html=True)
+    components.html(video_html, height=0, width=0)
 else:
-    # Si no hay vídeo, solo aplicamos el CSS normal
+    # Si no hay vídeo, aplicamos solo el CSS del archivo styles.css
     st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
