@@ -59,7 +59,7 @@ with open("styles.css", "r", encoding="utf-8") as f:
 st.markdown("""
 <style>
 .stApp {
-    background-color: #0e1117 !important;
+    background-color: #F54927 !important;
 }
 </style>
 """, unsafe_allow_html=True)
