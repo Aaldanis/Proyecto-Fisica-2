@@ -1,10 +1,12 @@
 # =============================================================================
 # ASISTENTE VIRTUAL DE ESTADÍSTICA APLICADA
 # Universidad Mariano Gálvez de Guatemala
+# Código completamente comentado línea por línea
 # =============================================================================
 # Este archivo es la interfaz principal de la aplicación (hecha con Streamlit).
 # Controla todo lo que ve el usuario: menús, pestañas, entradas de datos,
 # botones y la forma en que se muestran los resultados.
+
 # -----------------------------------------------------------------------------
 # IMPORTACIONES
 # -----------------------------------------------------------------------------
@@ -18,7 +20,6 @@ import os                               # Acceso a variables de entorno del sist
 from dotenv import load_dotenv          # Carga variables desde un archivo .env
 from collections import Counter         # Contador de frecuencias (útil para la moda)
 import google.generativeai as genai     # Librería para usar el modelo de IA de Google (Gemini)
-import streamlit.components.v1 as components
 
 # Cargamos las variables de entorno del archivo .env (si existe)
 load_dotenv()
@@ -53,31 +54,34 @@ with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
 
 # -----------------------------------------------------------------------------
-# VÍDEO DE FONDO (versión más estable)
+# VÍDEO DE FONDO (método corregido con st.markdown)
 # -----------------------------------------------------------------------------
+# Si hay una URL de vídeo definida, inyectamos el vídeo + estilos juntos
 if VIDEO_FONDO:
+    # Creamos el HTML del vídeo de fondo con sus estilos CSS
     video_html = f"""
     <style>
         #video-fondo {{
-            position: fixed;
+            position: fixed;              /* Se queda fijo en la pantalla aunque se haga scroll */
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -1;
-            opacity: 0.45;
-            pointer-events: none;
+            width: 100vw;                 /* Ocupa todo el ancho de la pantalla */
+            height: 100vh;                /* Ocupa todo el alto de la pantalla */
+            object-fit: cover;            /* El vídeo cubre todo el espacio sin deformarse */
+            z-index: -1;                  /* Se queda detrás de todo el contenido */
+            opacity: 0.45;                /* Transparencia del 45% */
+            pointer-events: none;         /* El ratón no interactúa con el vídeo */
         }}
         .stApp, [data-testid="stAppViewContainer"], .main {{
-            background: transparent !important;
+            background: transparent !important;   /* Hacemos transparente el fondo de Streamlit */
         }}
     </style>
     <video autoplay muted loop playsinline id="video-fondo">
         <source src="{VIDEO_FONDO}" type="video/mp4">
     </video>
     """
-    components.html(video_html, height=0, width=0)
+    # Inyectamos el HTML directamente en la página (este método sí funciona como fondo)
+    st.markdown(video_html, unsafe_allow_html=True)
 else:
     # Si no hay vídeo, aplicamos solo el CSS del archivo styles.css
     st.markdown(CSS, unsafe_allow_html=True)
@@ -329,8 +333,6 @@ if seccion == "Módulos principales":
                 c2.metric("Mediana", f"{r['mediana']:.4f}{u}")
                 c3.metric("s", f"{r['std_m']:.4f}{u}")
                 c4.metric("Rango", f"{r['rango']:.4f}{u}")
-        
-        st.html('</div>')   # Cierre de la tarjeta visual (si se usaba)
 
     # ==================== MÓDULO 2: DATOS EXPERIMENTALES ====================
     with tab2:
@@ -373,8 +375,6 @@ if seccion == "Módulos principales":
                 st.markdown("---")
                 st.markdown("### Procedimiento completo")
                 mostrar_procedimiento(r, u)
-        
-        st.html('</div>')
 
     # ==================== MÓDULO 3: TABLAS Y GRÁFICAS ====================
     with tab3:
@@ -482,8 +482,6 @@ if seccion == "Módulos principales":
                 ax.grid(alpha=0.3)
                 st.pyplot(fig)      # Mostramos la gráfica en Streamlit
                 plt.close()         # Cerramos la figura para liberar memoria
-        
-        st.html('</div>')
 
     # ==================== MÓDULO 4: PROBABILIDAD (DISTRIBUCIÓN NORMAL) ====================
     with tab4:
@@ -557,8 +555,6 @@ if seccion == "Módulos principales":
                     
                     prob = dist.cdf(b) - dist.cdf(a)
                     st.success(f"P({a} ≤ X ≤ {b}) = {prob * 100:.2f}%")
-        
-        st.html('</div>')
 
     # ==================== MÓDULO 5: CORRELACIÓN Y REGRESIÓN ====================
     with tab5:
@@ -698,8 +694,6 @@ elif seccion == "Ejercicios de ejemplo":
         if not err:
             # Calculamos y mostramos el procedimiento completo
             mostrar_procedimiento(calcular(arr))
-    
-    st.html('</div>')
 
 # -----------------------------------------------------------------------------
 # PRÁCTICA (ejercicios aleatorios con retroalimentación)
@@ -745,8 +739,6 @@ elif seccion == "Practicar":
             mostrar_procedimiento(calcular(datos))
     else:
         st.info("Genera un ejercicio para empezar.")
-    
-    st.html('</div>')
 
 # -----------------------------------------------------------------------------
 # PIE DE PÁGINA
