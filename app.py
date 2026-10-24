@@ -52,53 +52,9 @@ VIDEO_FONDO = "https://github.com/Aaldanis/Wallpapers/raw/refs/heads/main/celest
 # Abrimos el archivo styles.css y leemos todo su contenido
 with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
-"""
 # -----------------------------------------------------------------------------
 # VÍDEO DE FONDO (método robusto con JavaScript)
 # -----------------------------------------------------------------------------
-if VIDEO_FONDO:
-    st.markdown(f"""
-    <script>
-    (function() {{
-        if (document.getElementById('video-fondo')) return;
-
-        var video = document.createElement('video');
-        video.id = 'video-fondo';
-        video.autoplay = true;
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -1;
-            opacity: 0.45;
-            pointer-events: none;
-        `;
-
-        var source = document.createElement('source');
-        source.src = '{VIDEO_FONDO}';
-        source.type = 'video/mp4';
-        video.appendChild(source);
-
-        document.body.insertBefore(video, document.body.firstChild);
-
-        var style = document.createElement('style');
-        style.textContent = `
-            .stApp, [data-testid="stAppViewContainer"], .main {{
-                background: transparent !important;
-            }}
-        `;
-        document.head.appendChild(style);
-    }})();
-    </script>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown(CSS, unsafe_allow_html=True)"""
 # Vídeo desactivado temporalmente
 st.markdown(CSS, unsafe_allow_html=True)
 
