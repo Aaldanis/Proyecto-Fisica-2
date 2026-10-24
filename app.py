@@ -54,36 +54,50 @@ with open("styles.css", "r", encoding="utf-8") as f:
     CSS = f"<style>{f.read()}</style>"   # Encerramos el CSS dentro de una etiqueta <style>
 
 # -----------------------------------------------------------------------------
-# VÍDEO DE FONDO (método corregido con st.markdown)
+# VÍDEO DE FONDO (método robusto con JavaScript)
 # -----------------------------------------------------------------------------
-# Si hay una URL de vídeo definida, inyectamos el vídeo + estilos juntos
 if VIDEO_FONDO:
-    # Creamos el HTML del vídeo de fondo con sus estilos CSS
-    video_html = f"""
-    <style>
-        #video-fondo {{
-            position: fixed;              /* Se queda fijo en la pantalla aunque se haga scroll */
+    st.markdown(f"""
+    <script>
+    (function() {{
+        if (document.getElementById('video-fondo')) return;
+
+        var video = document.createElement('video');
+        video.id = 'video-fondo';
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.style.cssText = `
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;                 /* Ocupa todo el ancho de la pantalla */
-            height: 100vh;                /* Ocupa todo el alto de la pantalla */
-            object-fit: cover;            /* El vídeo cubre todo el espacio sin deformarse */
-            z-index: -1;                  /* Se queda detrás de todo el contenido */
-            opacity: 0.45;                /* Transparencia del 45% */
-            pointer-events: none;         /* El ratón no interactúa con el vídeo */
-        }}
-        .stApp, [data-testid="stAppViewContainer"], .main {{
-            background: transparent !important;   /* Hacemos transparente el fondo de Streamlit */
-        }}
-    </style>
-    <video autoplay muted loop playsinline id="video-fondo">
-        <source src="{VIDEO_FONDO}" type="video/mp4">
-    </video>
-    """
-    # Inyectamos el HTML directamente en la página (este método sí funciona como fondo)
-    st.markdown(video_html, unsafe_allow_html=True)
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.45;
+            pointer-events: none;
+        `;
+
+        var source = document.createElement('source');
+        source.src = '{VIDEO_FONDO}';
+        source.type = 'video/mp4';
+        video.appendChild(source);
+
+        document.body.insertBefore(video, document.body.firstChild);
+
+        var style = document.createElement('style');
+        style.textContent = `
+            .stApp, [data-testid="stAppViewContainer"], .main {{
+                background: transparent !important;
+            }}
+        `;
+        document.head.appendChild(style);
+    }})();
+    </script>
+    """, unsafe_allow_html=True)
 else:
-    # Si no hay vídeo, aplicamos solo el CSS del archivo styles.css
     st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
