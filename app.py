@@ -55,9 +55,14 @@ with open("styles.css", "r", encoding="utf-8") as f:
 # -----------------------------------------------------------------------------
 # VÍDEO DE FONDO (método robusto con JavaScript)
 # -----------------------------------------------------------------------------
-# Vídeo desactivado temporalmente
-st.markdown(CSS, unsafe_allow_html=True)
-
+# Fondo normal (sin vídeo por ahora)
+st.markdown("""
+<style>
+.stApp {
+    background-color: #0e1117 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # FUNCIONES (importadas desde backend.py)
 # -----------------------------------------------------------------------------
