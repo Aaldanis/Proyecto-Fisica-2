@@ -162,7 +162,7 @@ with st.sidebar:
     else:
         st.warning("API Key no configurada (.env o Streamlit Secrets)")
     pregunta_ia = st.text_area("Pregunta sobre Estadística", placeholder="Ej: ¿Cuándo se usa la desviación estándar muestral?", height=80, key="pregunta_ia")
-    if st.button("Preguntar a Gemini"):
+    if st.button("Preguntar al asistente"):
         if not api_key:
             st.error("API Key no configurada. Agrégala en .env o en Streamlit Secrets.")
         elif not pregunta_ia.strip():
