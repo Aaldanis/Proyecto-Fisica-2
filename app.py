@@ -55,26 +55,16 @@ with open("styles.css", "r", encoding="utf-8") as f:
 # -----------------------------------------------------------------------------
 # VÍDEO DE FONDO (método robusto con JavaScript)
 # -----------------------------------------------------------------------------
-if VIDEO_FONDO:
-    st.markdown(f"""
-    <style>
-        .stApp {{
-            background: transparent !important;
-        }}
-        #bg-video {{
-            position: fixed;
-            top: 0;
-            left: 0;
-            min-width: 100%;
-            min-height: 100%;
-            z-index: -1;
-            opacity: 0.4;
-        }}
-    </style>
-    <video id="bg-video" autoplay muted loop playsinline>
-        <source src="{VIDEO_FONDO}" type="video/mp4">
-    </video>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<style>
+.stApp {
+    background-image: url('https://tu-imagen.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+</style>
+""", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # FUNCIONES (importadas desde backend.py)
 # -----------------------------------------------------------------------------
